@@ -1,130 +1,78 @@
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class Main {
-
-    public static final String SOURCE_FILE = "res/1.jpg";
-    public static final String DESTINATION_FILE = "./out/2.jpg";
+    private static final String INPUT_FILE = "./throughput/war_and_peace.txt";
+    private static final int NUMBER_OF_THREADS = 8;
 
     public static void main(String[] args) throws IOException {
-        BufferedImage originalImage = ImageIO.read(new File(SOURCE_FILE));
-        BufferedImage resultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), BufferedImage.TYPE_INT_RGB);
-
-        long startTime = System.currentTimeMillis();
-
-        recolorSingleThreaded(originalImage, resultImage);
-//        recolorMultithreaded(originalImage, resultImage, 5);
-
-        long endTime = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-
-        File outputFile = new File(DESTINATION_FILE);
-        ImageIO.write(resultImage, "jpg", outputFile);
-
-        System.out.println("Total time: " + totalTime + " ms");
+        String text = new String(Files.readAllBytes(Paths.get(INPUT_FILE)));
+        startServer(text);
     }
 
-    public static void recolorMultithreaded(BufferedImage originalImage, BufferedImage resultImage, int numberOfThread) {
-        List<Thread> threads = new ArrayList<>();
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight() / numberOfThread;
-        for (int i = 0; i < numberOfThread; i++) {
-            final int threadMultiplier = i;
+    public static void startServer(String text) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/search", new WordCountHandler(text));
+        Executor executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
+        server.setExecutor(executor);
+        server.start();
+    }
 
-            Thread thread = new Thread( ()-> {
-                int leftCorner = 0;
-                int topCorner = height + threadMultiplier;
+    private static class WordCountHandler implements HttpHandler {
+        private String text;
 
-                recolorImage(originalImage, resultImage, leftCorner, topCorner, width, height);
-            });
-
-            threads.add(thread);
+        public WordCountHandler(String text) {
+            this.text = text;
         }
 
-        for (Thread thread : threads) {
-            thread.start();
-        }
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        @Override
+        public void handle(HttpExchange httpExchange) throws IOException {
+            String query = httpExchange.getRequestURI().getQuery();
+            String[] keyValue = query.split("=");
+            String action = keyValue[0];
+            String word = keyValue[1];
+            if (!action.equals("word")) {
+                httpExchange.sendResponseHeaders(400, 0);
+                return;
             }
-        }
-    }
 
-    public static void recolorPixel(BufferedImage originalImage, BufferedImage resultImage, int x, int y) {
-        int rgb = originalImage.getRGB(x, y);
+            long count = countWord(word);
 
-        int red = getRed(rgb);
-        int green = getGreen(rgb);
-        int blue = getBlue(rgb);
-
-        int newRed;
-        int newGreen;
-        int newBlue;
-
-        if(isShadeOfGray(red, green, blue)) {
-            newRed = Math.min(red + 10, 255);
-            newGreen = Math.max(green - 80, 0);
-            newBlue = Math.max(blue - 20, 0);
-        }  else {
-            newRed = red;
-            newGreen = green;
-            newBlue = blue;
+            byte[] response = Long.toString(count).getBytes();
+            httpExchange.sendResponseHeaders(200, response.length);
+            OutputStream outputStream = httpExchange.getResponseBody();
+            outputStream.write(response);
+            outputStream.close();
         }
 
-        int newRGB = createRGBFromColor(newRed, newGreen, newBlue);
-        setRGB(resultImage, x, y, newRGB);
-    }
+        private long countWord(String word) {
+            long count = 0;
+            int index = 0;
+            while (index >= 0) {
+                index = text.indexOf(word, index);
 
-    public static void recolorSingleThreaded(BufferedImage originalImage, BufferedImage resultImage) {
-        recolorImage(originalImage, resultImage, 0, 0, originalImage.getWidth(), originalImage.getHeight());
-    }
-
-    public static void recolorImage(BufferedImage originalImage, BufferedImage resultImage, int leftCorner, int topCorner, int width, int height) {
-        for(int x = leftCorner; x < leftCorner + width && x < originalImage.getWidth(); x++) {
-            for(int y = topCorner; y < topCorner + height; y++) {
-                recolorPixel(originalImage, resultImage, x, y);
+                if (index >= 0) {
+                    count++;
+                    index++;
+                }
             }
+            return count;
         }
-
-    }
-
-    public static void setRGB(BufferedImage image, int x, int y, int rgb) {
-        image.getRaster().setDataElements(x, y, image.getColorModel().getDataElements(rgb, null));
-    }
-
-    public static boolean isShadeOfGray(int red, int green, int blue) {
-        return Math.abs(red - green) < 30 && Math.abs(red - blue) < 30 && Math.abs(green - blue) < 30;
-    }
-
-    public static int createRGBFromColor(int red, int green, int blue) {
-        int rgb = 0;
-
-        rgb |= red << 16;
-        rgb |= green << 8;
-        rgb |= blue;
-
-        rgb |= 0xff000000;
-
-        return rgb;
-    }
-
-    public static int getBlue(int rgb) {
-        return rgb & 0x000000FF;
-    }
-
-    public static int getRed(int rgb) {
-        return rgb & 0x00FF0000 >> 16;
-    }
-
-    public static int getGreen(int rgb) {
-        return rgb & 0x0000FF00 >> 8;
     }
 }
+
