@@ -2,6 +2,7 @@
 
 public class Main {
 
+    public static final int MAX_PASSWORD = 9999;
     public static void main(String[] args) {
 
     }
@@ -37,6 +38,55 @@ public class Main {
 
         }
 
+
+        private static class AscendingHackerThread extends HackerThread {
+            public AscendingHackerThread(Vault vault) {
+                super(vault);
+            }
+
+            @Override
+            public void run() {
+                for(int guess = 0; guess < MAX_PASSWORD; guess++) {
+                    if(vault.isCorrectPassword(guess)) {
+                        System.out.println(this.getName() + " guess the password " + guess);
+                        System.exit(0);
+                    }
+                }
+            }
+        }
+
+        private static class DescendingHackerThreaD extends HackerThread {
+            public DescendingHackerThreaD(Vault vault) {
+                super(vault);
+            }
+
+            @Override
+            public void run() {
+                for(int guess = MAX_PASSWORD; guess >= 0; guess--) {
+                    if(vault.isCorrectPassword(guess)) {
+                        System.out.println(this.getName() + " guess the password " + guess);
+                        System.exit(0);
+                    }
+                }
+            }
+        }
+
+        private static class PoliceThreaD extends Thread {
+            @Override
+            public void run() {
+                for(int i = 10; i > 0; i--) {
+                    try {
+                        Thread.sleep(1000);
+                    }catch (InterruptedException e) {
+
+                    }
+                    System.out.println(i);
+                }
+
+                System.out.println("Game Over");
+                System.exit(0);
+            }
+        }
 
 
     }
