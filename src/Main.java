@@ -27,6 +27,16 @@ public class Main {
         thread.start();
         System.out.println("We are in thread: " + Thread.currentThread().getName()+ " after staring new thread");
 
+        Thread newThread = new NewThread();
+        newThread.setName("New Thread");
+        newThread.start();
         Thread.sleep(10000);
+    }
+
+    private static class NewThread extends Thread{
+        @Override
+        public void run(){
+            System.out.println("We are in thread: "+Thread.currentThread().getName() + ", Hello World From New Thread");
+        }
     }
 }
