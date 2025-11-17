@@ -15,6 +15,47 @@ public class Main {
 
     }
 
+    public static void recolorPixel(BufferedImage originalImage, BufferedImage resultImage, int x, int y) {
+        int rgb = originalImage.getRGB(x, y);
+
+        int red = getRed(rgb);
+        int green = getGreen(rgb);
+        int blue = getBlue(rgb);
+
+        int newRed;
+        int newGreen;
+        int newBlue;
+
+        if(isShadeOfGray(red, green, blue)) {
+            newRed = Math.min(red + 10, 255);
+            newGreen = Math.max(green - 80, 0);
+            newBlue = Math.max(blue - 20, 0);
+        }  else {
+            newRed = red;
+            newGreen = green;
+            newBlue = blue;
+        }
+
+        int newRGB = createRGBFromColor(newRed, newGreen, newBlue);
+        setRGB(resultImage, x, y, newRGB);
+    }
+
+    public static void recolorSingleThreaded(BufferedImage originalImage, BufferedImage resultImage) {
+        recolorImage(originalImage, resultImage, 0, 0, originalImage.getWidth(), originalImage.getHeight());
+    }
+
+    public static void recolorImage(BufferedImage originalImage, BufferedImage resultImage, int leftCorner, int topCorner, int width, int height) {
+        for(int x = leftCorner; x < leftCorner + width && x < originalImage.getWidth(); x++) {
+            for(int y = topCorner; y < topCorner + height; y++) {
+                recolorPixel(originalImage, resultImage, x, y);
+            }
+        }
+
+    }
+
+    public static void setRGB(BufferedImage image, int x, int y, int rgb) {
+        image.getRaster().setDataElements(x, y, image.getColorModel().getDataElements(rgb, null));
+    }
 
     public static boolean isShadeOfGray(int red, int green, int blue) {
         return Math.abs(red - green) < 30 && Math.abs(red - blue) < 30 && Math.abs(green - blue) < 30;
