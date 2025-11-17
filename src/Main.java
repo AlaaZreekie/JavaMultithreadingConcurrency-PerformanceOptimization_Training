@@ -12,7 +12,10 @@ public class Main {
         BufferedImage originalImage = ImageIO.read(new File(SOURCE_FILE));
         BufferedImage resultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), BufferedImage.TYPE_INT_RGB);
 
+        recolorSingleThreaded(originalImage, resultImage);
 
+        File outputFile = new File(DESTINATION_FILE);
+        ImageIO.write(resultImage, "jpg", outputFile);
     }
 
     public static void recolorPixel(BufferedImage originalImage, BufferedImage resultImage, int x, int y) {
