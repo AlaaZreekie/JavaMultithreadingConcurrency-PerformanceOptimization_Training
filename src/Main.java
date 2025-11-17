@@ -8,6 +8,9 @@ public class Main {
     public static void main(String[] args) {
         Thread thread = new Thread(new LongComputationTask(new BigInteger("20000000"), new BigInteger("33333333333")));
 
+        //this makes even if the long calculation did not end, it closes when the main thread ended makes the app end
+         thread.setDaemon(true);
+        //
         thread.start();
         //this will stop the thread from working for long long time
         thread.interrupt();
