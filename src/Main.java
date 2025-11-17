@@ -2,6 +2,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
 
@@ -16,6 +18,36 @@ public class Main {
 
         File outputFile = new File(DESTINATION_FILE);
         ImageIO.write(resultImage, "jpg", outputFile);
+    }
+
+    public static void recolorMultithreaded(BufferedImage originalImage, BufferedImage resultImage, int numberOfThread) {
+        List<Thread> threads = new ArrayList<>();
+        int width = originalImage.getWidth();
+        int height = originalImage.getHeight() / numberOfThread;
+        for (int i = 0; i < numberOfThread; i++) {
+            final int threadMultiplier = i;
+
+            Thread thread = new Thread( ()-> {
+                int leftCorner = 0;
+                int topCorner = height + threadMultiplier;
+
+                recolorImage(originalImage, resultImage, leftCorner, topCorner, width, height);
+            });
+
+            threads.add(thread);
+        }
+
+        for (Thread thread : threads) {
+            thread.start();
+        }
+
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void recolorPixel(BufferedImage originalImage, BufferedImage resultImage, int x, int y) {
