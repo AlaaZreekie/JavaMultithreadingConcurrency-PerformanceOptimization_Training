@@ -8,10 +8,16 @@ public class Main {
         IncrementingThread incrementThread = new IncrementingThread(inventoryCounter);
         DecrementingThread decrementingThread = new DecrementingThread(inventoryCounter);
 
-        incrementThread.start();
-        incrementThread.join();
+//        incrementThread.start();
+//        incrementThread.join();
+//
+//        decrementingThread.start();
+//        decrementingThread.join();
 
+        //here each time we run we will have different items count
+        incrementThread.start();
         decrementingThread.start();
+        incrementThread.join();
         decrementingThread.join();
 
         System.out.println("We currently have " + inventoryCounter.getItems() + " items");
@@ -35,6 +41,7 @@ public class Main {
         private InventoryCounter counter;
 
         public DecrementingThread(InventoryCounter inventoryCounter) {
+            this.counter = inventoryCounter;
         }
 
         @Override
